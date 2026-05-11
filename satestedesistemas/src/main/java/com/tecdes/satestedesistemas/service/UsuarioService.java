@@ -44,6 +44,8 @@ public class UsuarioService {
         return mapDTO(repository.save(usuario));
     }
 
+    // teste
+     
     private UsuarioDTO mapDTO(Usuario usuario) {
         return new UsuarioDTO(
             usuario.getId(),
