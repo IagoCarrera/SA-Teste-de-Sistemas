@@ -22,7 +22,7 @@ public class UsuarioServiceTest {
     private UsuarioService usuarioService;
 
     @Test
-    void CriarUsuario(){
+    void deveCriarUsuario(){
         UsuarioDTO usuarioEntrada = createUsuarioDTO();
         Usuario usuario = mapDTO(usuarioEntrada);
         when(usuarioRepository.save(usuario)).thenReturn(usuario);
@@ -31,6 +31,7 @@ public class UsuarioServiceTest {
 
         assertEquals(usuarioEntrada, usuarioRetornado);
     }
+
 
     private UsuarioDTO createUsuarioDTO(){
         return new UsuarioDTO(1L, "Vinicius", null);
