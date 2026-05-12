@@ -4,8 +4,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.tecdes.satestedesistemas.dto.ListaDTO;
 import com.tecdes.satestedesistemas.dto.UsuarioDTO;
+import com.tecdes.satestedesistemas.model.Lista;
 import com.tecdes.satestedesistemas.model.Usuario;
+import com.tecdes.satestedesistemas.repository.ListaRepository;
 import com.tecdes.satestedesistemas.repository.UsuarioRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -17,6 +20,16 @@ import lombok.RequiredArgsConstructor;
 public class UsuarioService {
 
     private final UsuarioRepository repository;
+
+    private final ListaRepository listaRepository;
+
+    public ListaDTO acessarLista(UsuarioDTO usuario, ListaDTO listaDTO){
+        if(listaDTO.usuario().getId() == usuario.id()){
+            Lista lista = listaRepository.findById(listaDTO.id()).orElseThrow();
+            return mapListaToDTO(lista);
+        }
+        return null;
+    }
 
     @Transactional
     public UsuarioDTO create(UsuarioDTO dto) {
@@ -58,6 +71,10 @@ public class UsuarioService {
             dto.nome(),
             dto.listas()
         );
+    }
+
+    private ListaDTO mapListaToDTO(Lista lista){
+        return new ListaDTO(lista.getId(), lista.getNome(), lista.getTarefas(), lista.getUsuario());
     }
 
 }

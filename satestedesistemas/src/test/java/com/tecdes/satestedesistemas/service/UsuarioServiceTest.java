@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,12 +19,16 @@ import com.tecdes.satestedesistemas.dto.ListaDTO;
 import com.tecdes.satestedesistemas.dto.UsuarioDTO;
 import com.tecdes.satestedesistemas.model.Lista;
 import com.tecdes.satestedesistemas.model.Usuario;
+import com.tecdes.satestedesistemas.repository.ListaRepository;
 import com.tecdes.satestedesistemas.repository.UsuarioRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class UsuarioServiceTest {
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private ListaRepository listaRepository;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -47,9 +52,11 @@ public class UsuarioServiceTest {
         Lista lista1 = (Lista) mapDoUsuario1.get("Lista");
         UsuarioDTO usuario1DTO = (UsuarioDTO) mapDoUsuario1.get("UsuarioDTO");
 
-        ListaDTO lista = usuarioService.acessarLista(usuario1, lista1.getId());
+        when(listaRepository.findById(lista1.getId())).thenReturn(Optional.of(lista1));
         
-        assertEquals(mapToDTO(lista1), lista);
+        ListaDTO lista = usuarioService.acessarLista(usuario1DTO, mapToListaDTO(lista1));
+        
+        assertEquals(mapToListaDTO(lista1), lista);
     }
 
     private UsuarioDTO createUsuarioDTO(){
@@ -67,7 +74,7 @@ public class UsuarioServiceTest {
         Map<String,Object> map = new HashMap<>();
         map.put("Usuario", usuario);
         map.put("Lista", lista);
-        map.put("UsuarioDTO", usuario);
+        map.put("UsuarioDTO", mapToUsuarioDTO(usuario));
 
         return map;
     }
@@ -76,7 +83,7 @@ public class UsuarioServiceTest {
         return new Usuario(usuarioDTO.id(), usuarioDTO.nome(), usuarioDTO.listas());
     }
 
-    private UsuarioDTO mapToDTO(Usuario usuario){
+    private UsuarioDTO mapToUsuarioDTO(Usuario usuario){
         return new UsuarioDTO(usuario.getId(), usuario.getNome(), usuario.getListas());
     }
 
@@ -84,8 +91,12 @@ public class UsuarioServiceTest {
         return Lista.builder().id(id).nome("Teste").tarefas(null).usuario(usuario).build();
     }
 
-    private ListaDTO mapToDTO(Lista lista){
+    private ListaDTO mapToListaDTO(Lista lista){
         return new ListaDTO(lista.getId(), lista.getNome(), lista.getTarefas(), lista.getUsuario());
+    }
+
+    private Lista mapToLista(Lista lista){
+        return Lista.builder().id(lista.getId()).nome(lista.getNome()).tarefas(lista.getTarefas()).usuario(lista.getUsuario()).build();
     }
 
 }
