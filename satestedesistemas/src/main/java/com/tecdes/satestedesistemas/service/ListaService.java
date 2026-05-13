@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.tecdes.satestedesistemas.dto.ListaDTO;
 import com.tecdes.satestedesistemas.model.Lista;
+import com.tecdes.satestedesistemas.model.Tarefa;
 import com.tecdes.satestedesistemas.repository.ListaRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -45,6 +46,28 @@ public class ListaService {
                 .collect(Collectors.toList()).size();
 
         return quantidadeDeAtivasMinimas <= qtdAtualAtivas;
+    }
+
+    private Boolean tarefaRepetida(ListaDTO listaDTO) {
+        List<Tarefa> tarefas = listaDTO.tarefas();
+
+        for (int i = 0; i < tarefas.size(); i++) {
+            Tarefa tarefaAtual = tarefas.get(i);
+            Long id1 = tarefaAtual.getId();
+            String descricao1 = tarefaAtual.getDescricao();
+
+            for (int j = i + 1; j < tarefas.size(); j++) {
+                Tarefa tarefaComparada = tarefas.get(j);
+                Long id2 = tarefaComparada.getId();
+                String descricao2 = tarefaComparada.getDescricao();
+
+                if (id1.equals(id2) || descricao1.equals(descricao2)) {
+                    return true; // achou duplicata, pode parar
+                }
+            }
+        }
+
+        return false; // nenhuma duplicata encontrada
     }
 
     @Transactional

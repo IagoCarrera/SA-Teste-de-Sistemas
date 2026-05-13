@@ -1,6 +1,7 @@
 package com.tecdes.satestedesistemas.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -60,8 +61,22 @@ public class ListaServiceTest {
 
     }
 
+    @Test
+    void deveNaoTerTarefaConcluida() {
+        ListaDTO listaDTO = criarListaTeste();
 
-    
+        Tarefa tarefaRepetida = listaDTO.tarefas().get(0);
+
+        listaDTO.tarefas().add(tarefaRepetida.builder()
+                .id(4l)
+                .build());
+
+        ListaDTO listaNull = listaService.update(listaDTO.id(), listaDTO);
+
+        verify(listaRepository, never()).save(mapEntity(listaDTO));
+        assertNull(listaNull);
+
+    }
 
     private Lista mapEntity(ListaDTO listaDTO) {
         return Lista.builder()
