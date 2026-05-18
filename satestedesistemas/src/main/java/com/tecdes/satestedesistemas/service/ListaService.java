@@ -78,6 +78,10 @@ public class ListaService {
             return null;
         }
 
+        if(tarefaRepetida(dto)){
+            return null;
+        }
+
         Lista lista = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Lista não encontrada com ID: " + id));
 

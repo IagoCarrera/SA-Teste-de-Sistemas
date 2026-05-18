@@ -3,6 +3,7 @@ package com.tecdes.satestedesistemas.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,7 +38,7 @@ public class ListaServiceTest {
     void deveCriarLista() {
         ListaDTO listaDTO = criarListaTeste();
         Lista listaEntrada = mapEntity(listaDTO);
-        when(listaRepository.save(listaEntrada)).thenReturn(listaEntrada);
+        when(listaRepository.save(any(Lista.class))).thenReturn(listaEntrada);
 
         ListaDTO dto = listaService.create(listaDTO);
 
@@ -57,23 +58,21 @@ public class ListaServiceTest {
         listaService.update(listaDTO.id(), listaDTO);
 
         verify(listaRepository).deleteById(listaDTO.id());
-        verify(listaRepository, never()).save(mapEntity(listaDTO));
+        verify(listaRepository, never()).save(any(Lista.class));
 
     }
 
     @Test
-    void deveNaoTerTarefaConcluida() {
+    void deveNaoTerRepetida() {
         ListaDTO listaDTO = criarListaTeste();
 
         Tarefa tarefaRepetida = listaDTO.tarefas().get(0);
 
-        listaDTO.tarefas().add(tarefaRepetida.builder()
-                .id(4l)
-                .build());
+        listaDTO.tarefas().add(tarefaRepetida);
 
         ListaDTO listaNull = listaService.update(listaDTO.id(), listaDTO);
 
-        verify(listaRepository, never()).save(mapEntity(listaDTO));
+        verify(listaRepository, never()).save(any(Lista.class));
         assertNull(listaNull);
 
     }
