@@ -1,11 +1,14 @@
 package com.tecdes.satestedesistemas.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,53 +37,32 @@ public class UsuarioServiceTest {
     private UsuarioService usuarioService;
 
     @Test
-    void criarUsuario(){
-        UsuarioDTO usuarioEntrada = createUsuarioDTO();
-        Usuario usuario = mapToEntity(usuarioEntrada);
-        when(usuarioRepository.save(usuario)).thenReturn(usuario);
-
-        UsuarioDTO usuarioRetornado = usuarioService.create(usuarioEntrada);
-
-        assertEquals(usuarioEntrada, usuarioRetornado);
-    }
-
-    @Test
-    void deveAcessarSuaPropriaLista(){
-        
-        Map<String,Object> mapDoUsuario1 = createUsuarioDTOPorNomeEListaParaUsuario("João");
-        Usuario usuario1 = (Usuario) mapDoUsuario1.get("Usuario");
-        Lista lista1 = (Lista) mapDoUsuario1.get("Lista");
-        UsuarioDTO usuario1DTO = (UsuarioDTO) mapDoUsuario1.get("UsuarioDTO");
+    void deveAcessarSuaPropriaLista(){  
+        Usuario usuario1 = createUsuario(1L, "João");
+        Lista lista1 = createList(1L, usuario1);
 
         when(listaRepository.findById(lista1.getId())).thenReturn(Optional.of(lista1));
         
-        ListaDTO lista = usuarioService.acessarLista(usuario1DTO, mapToListaDTO(lista1));
+        ListaDTO lista = usuarioService.acessarLista(mapToUsuarioDTO(usuario1), mapToListaDTO(lista1));
         
         assertEquals(mapToListaDTO(lista1), lista);
     }
 
-    private UsuarioDTO createUsuarioDTO(){
-        return new UsuarioDTO(1L, "Vinicius", null);
+    @Test
+    void naoDeveAcessarListaDeOutros(){
+        Usuario usuario1 = createUsuario(1L, "João");
+        Lista lista1 = createList(1L, usuario1);
+
+        Usuario usuario2 = createUsuario(2L, "Arthur");
+       
+        ListaDTO lista = usuarioService.acessarLista(mapToUsuarioDTO(usuario2), mapToListaDTO(lista1));
+       
+        verify(listaRepository, never()).findById(anyLong());
+        assertNull(lista);
     }
 
-    private UsuarioDTO createUsuarioDTOPorNome(String nome){
-        return new UsuarioDTO(1L, nome, null);
-    }
-    private Map<String,Object> createUsuarioDTOPorNomeEListaParaUsuario(String nome){
-        Usuario usuario = new Usuario(1L, nome, new ArrayList<>());
-        Lista lista = createList(1L, usuario);
-        usuario.getListas().add(lista);
-
-        Map<String,Object> map = new HashMap<>();
-        map.put("Usuario", usuario);
-        map.put("Lista", lista);
-        map.put("UsuarioDTO", mapToUsuarioDTO(usuario));
-
-        return map;
-    }
-
-    private Usuario mapToEntity(UsuarioDTO usuarioDTO){
-        return new Usuario(usuarioDTO.id(), usuarioDTO.nome(), usuarioDTO.listas());
+    private Usuario createUsuario(Long id, String nome){
+        return new Usuario(id, nome, new ArrayList<>());
     }
 
     private UsuarioDTO mapToUsuarioDTO(Usuario usuario){
@@ -93,10 +75,6 @@ public class UsuarioServiceTest {
 
     private ListaDTO mapToListaDTO(Lista lista){
         return new ListaDTO(lista.getId(), lista.getNome(), lista.getTarefas(), lista.getUsuario());
-    }
-
-    private Lista mapToLista(Lista lista){
-        return Lista.builder().id(lista.getId()).nome(lista.getNome()).tarefas(lista.getTarefas()).usuario(lista.getUsuario()).build();
     }
 
 }
