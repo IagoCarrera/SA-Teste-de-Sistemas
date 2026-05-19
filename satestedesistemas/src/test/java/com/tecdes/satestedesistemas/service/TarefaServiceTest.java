@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,25 +18,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tecdes.satestedesistemas.dto.TarefaDTO;
-import com.tecdes.satestedesistemas.model.Lista;
 import com.tecdes.satestedesistemas.model.Tarefa;
 import com.tecdes.satestedesistemas.repository.TarefaRepository;
 
+import com.tecdes.satestedesistemas.model.Lista;
+
 import jakarta.persistence.EntityNotFoundException;
+
 @ExtendWith(MockitoExtension.class)
-class TarefaServiceTest {
-
+public class TarefaServiceTest {
     @Mock
-    private TarefaRepository repository;
+    public TarefaRepository repository;
 
-    @InjectMocks
-    private TarefaService service;
+    @InjectMocks 
+    public TarefaService service;
 
-    // TODO: substitua Lista.values()[0] por um valor real do seu enum, ex: Lista.A_FAZER
     private static final Lista LISTA_PADRAO = new Lista(1L, "Lista Teste", List.of(), null);
     private static Tarefa tarefaEntity;
     private static TarefaDTO tarefaDTO;   
-
 
     @BeforeAll
     void setUp() {
@@ -44,166 +43,179 @@ class TarefaServiceTest {
         tarefaDTO    = new TarefaDTO(1L, "Tarefa Teste", LISTA_PADRAO, "Descrição teste", true);
     }
 
-    // ------------------------------------------------------------------ create
-    @Nested
-    @DisplayName("create()")
-    class Create {
+    @Test
+    void deveCriarTarefa(){
+        // Arrange
+        TarefaDTO tarefaEntrada = createTarefaDTO();
+        Tarefa tarefa = mapEntity(tarefaEntrada);
+        when(repository.save(any(Tarefa.class))).thenReturn(tarefa);
 
-        @Test
-        @DisplayName("deve salvar e retornar o DTO corretamente")
-        void deveSalvarERetornarDTO() {
-            when(repository.save(any(Tarefa.class))).thenReturn(tarefaEntity);
+        // Act
+        TarefaDTO tarefaRetornada = service.create(tarefaEntrada);
 
-            TarefaDTO resultado = service.create(tarefaDTO);
-
-            assertThat(resultado).isNotNull();
-            assertThat(resultado.id()).isEqualTo(tarefaEntity.getId());
-            assertThat(resultado.nome()).isEqualTo(tarefaEntity.getNome());
-            assertThat(resultado.lista()).isEqualTo(tarefaEntity.getLista());
-            assertThat(resultado.descricao()).isEqualTo(tarefaEntity.getDescricao());
-            assertThat(resultado.ativo()).isEqualTo(tarefaEntity.isAtivo());
-
-            verify(repository, times(1)).save(any(Tarefa.class));
-        }
-
-        @Test
-        @DisplayName("deve chamar repository.save exatamente uma vez")
-        void deveChamarSaveUmaVez() {
-            when(repository.save(any(Tarefa.class))).thenReturn(tarefaEntity);
-
-            service.create(tarefaDTO);
-
-            verify(repository, times(1)).save(any(Tarefa.class));
-        }
+        // Assert
+        assertEquals(tarefaEntrada, tarefaRetornada);
+        verify(repository, times(1)).save(any(Tarefa.class));
     }
 
-    // ---------------------------------------------------------------- findById
-    @Nested
-    @DisplayName("findById()")
-    class FindById {
+    @Test 
+    void deveRemoverTarefa() {
+        // Arrange
+        Long id = 1L;
 
-        @Test
-        @DisplayName("deve retornar o DTO quando tarefa existir")
-        void deveRetornarDTOQuandoTarefaExistir() {
-            when(repository.findById(1L)).thenReturn(Optional.of(tarefaEntity));
+        // Act
+        service.delete(id);
 
-            TarefaDTO resultado = service.findById(1L);
-
-            assertThat(resultado).isNotNull();
-            assertThat(resultado.id()).isEqualTo(1L);
-            assertThat(resultado.nome()).isEqualTo("Tarefa Teste");
-        }
-
-        @Test
-        @DisplayName("deve lançar EntityNotFoundException quando tarefa não existir")
-        void deveLancarExcecaoQuandoTarefaNaoExistir() {
-            when(repository.findById(99L)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> service.findById(99L))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("99");
-        }
+        // Assert
+        verify(repository, times(1)).deleteById(id);
     }
 
-    // ----------------------------------------------------------------- findAll
-    @Nested
-    @DisplayName("findAll()")
-    class FindAll {
-
-        @Test
-        @DisplayName("deve retornar lista de DTOs quando houver tarefas")
-        void deveRetornarListaDeDTOs() {
-            Tarefa outra = new Tarefa(2L, "Outra Tarefa", LISTA_PADRAO, "Desc B", false);
-            when(repository.findAll()).thenReturn(List.of(tarefaEntity, outra));
-
-            List<TarefaDTO> resultado = service.findAll();
-
-            assertThat(resultado).hasSize(2);
-            assertThat(resultado.get(0).id()).isEqualTo(1L);
-            assertThat(resultado.get(1).id()).isEqualTo(2L);
-        }
-
-        @Test
-        @DisplayName("deve retornar lista vazia quando não houver tarefas")
-        void deveRetornarListaVazia() {
-            when(repository.findAll()).thenReturn(List.of());
-
-            List<TarefaDTO> resultado = service.findAll();
-
-            assertThat(resultado).isEmpty();
-        }
+    @Test
+    void deveAtualizarDescricaoTarefa() {
+        // Arrange
+        Long id = 1L;
+        Tarefa tarefaExistente = mapEntity(createTarefaDTO());
+        TarefaDTO dtoAtualizado = new TarefaDTO(id, "tarefa1", null, "descricaoAtualizada", true);
+        Tarefa tarefaAtualizada = mapEntity(dtoAtualizado);
+        when(repository.findById(id)).thenReturn(Optional.of(tarefaExistente));
+        when(repository.save(tarefaExistente)).thenReturn(tarefaAtualizada);
+        // Act
+        TarefaDTO resultado = service.update(id, dtoAtualizado);
+        // Assert
+        assertEquals("descricaoAtualizada", resultado.descricao());
+        verify(repository, times(1)).findById(id);
+        verify(repository, times(1)).save(tarefaExistente);
     }
 
-    // ------------------------------------------------------------------ delete
-    @Nested
-    @DisplayName("delete()")
-    class Delete {
+    @Test
+    void deveChamarSaveAposEncontrarEntidade() {
+        when(repository.findById(1L)).thenReturn(Optional.of(tarefaEntity));
+        when(repository.save(any(Tarefa.class))).thenReturn(tarefaEntity);
 
-        @Test
-        @DisplayName("deve chamar repository.deleteById com o id correto")
-        void deveChamarDeleteById() {
-            doNothing().when(repository).deleteById(1L);
+        service.update(1L, tarefaDTO);
 
-            service.delete(1L);
-
-            verify(repository, times(1)).deleteById(1L);
-        }
-
-        @Test
-        @DisplayName("não deve chamar nenhum outro método além de deleteById")
-        void naoDeveChamarOutrosMetodos() {
-            doNothing().when(repository).deleteById(1L);
-
-            service.delete(1L);
-
-            verify(repository, only()).deleteById(1L);
-        }
+        verify(repository, times(1)).findById(1L);
+        verify(repository, times(1)).save(any(Tarefa.class));
     }
 
-    // ------------------------------------------------------------------ update
-    @Nested
-    @DisplayName("update()")
-    class Update {
+    @Test
+    void deveLancarExcecaoQuandoNaoEncontrarParaAtualizar() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
 
-        @Test
-        @DisplayName("deve atualizar os campos e retornar o DTO atualizado")
-        void deveAtualizarCamposERetornarDTO() {
-            TarefaDTO dtoAtualizado     = new TarefaDTO(1L, "Nome Novo", LISTA_PADRAO, "Desc Nova", false);
-            Tarefa    entidadeAtualizada = new Tarefa(1L,  "Nome Novo", LISTA_PADRAO, "Desc Nova", false);
+        assertThatThrownBy(() -> service.update(99L, tarefaDTO))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("99");
 
-            when(repository.findById(1L)).thenReturn(Optional.of(tarefaEntity));
-            when(repository.save(any(Tarefa.class))).thenReturn(entidadeAtualizada);
+        verify(repository, never()).save(any());
+    }
 
-            TarefaDTO resultado = service.update(1L, dtoAtualizado);
+    @Test
+    void deveAtualizarCamposERetornarDTO() {
+        TarefaDTO dtoAtualizado     = new TarefaDTO(1L, "Nome Novo", LISTA_PADRAO, "Desc Nova", false);
+        Tarefa    entidadeAtualizada = new Tarefa(1L,  "Nome Novo", LISTA_PADRAO, "Desc Nova", false);
 
-            assertThat(resultado.nome()).isEqualTo("Nome Novo");
-            assertThat(resultado.lista()).isEqualTo(LISTA_PADRAO);
-            assertThat(resultado.descricao()).isEqualTo("Desc Nova");
-            assertThat(resultado.ativo()).isFalse();
-        }
+        when(repository.findById(1L)).thenReturn(Optional.of(tarefaEntity));
+        when(repository.save(any(Tarefa.class))).thenReturn(entidadeAtualizada);
 
-        @Test
-        @DisplayName("deve lançar EntityNotFoundException quando tarefa não existir no update")
-        void deveLancarExcecaoQuandoNaoEncontrarParaAtualizar() {
-            when(repository.findById(99L)).thenReturn(Optional.empty());
+        TarefaDTO resultado = service.update(1L, dtoAtualizado);
 
-            assertThatThrownBy(() -> service.update(99L, tarefaDTO))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("99");
+        assertThat(resultado.nome()).isEqualTo("Nome Novo");
+        assertThat(resultado.lista()).isEqualTo(LISTA_PADRAO);
+        assertThat(resultado.descricao()).isEqualTo("Desc Nova");
+        assertThat(resultado.ativo()).isFalse();
+    }
 
-            verify(repository, never()).save(any());
-        }
+    @Test
+    void naoDeveChamarOutrosMetodos() {
+        doNothing().when(repository).deleteById(1L);
 
-        @Test
-        @DisplayName("deve chamar save após encontrar a entidade")
-        void deveChamarSaveAposEncontrarEntidade() {
-            when(repository.findById(1L)).thenReturn(Optional.of(tarefaEntity));
-            when(repository.save(any(Tarefa.class))).thenReturn(tarefaEntity);
+        service.delete(1L);
 
-            service.update(1L, tarefaDTO);
+        verify(repository, only()).deleteById(1L);
+    }
 
-            verify(repository, times(1)).findById(1L);
-            verify(repository, times(1)).save(any(Tarefa.class));
-        }
+    @Test
+    void deveSalvarERetornarDTO() {
+        when(repository.save(any(Tarefa.class))).thenReturn(tarefaEntity);
+
+        TarefaDTO resultado = service.create(tarefaDTO);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.id()).isEqualTo(tarefaEntity.getId());
+        assertThat(resultado.nome()).isEqualTo(tarefaEntity.getNome());
+        assertThat(resultado.lista()).isEqualTo(tarefaEntity.getLista());
+        assertThat(resultado.descricao()).isEqualTo(tarefaEntity.getDescricao());
+        assertThat(resultado.ativo()).isEqualTo(tarefaEntity.isAtivo());
+
+        verify(repository, times(1)).save(any(Tarefa.class));
+    }
+
+    @Test
+    void deveChamarSaveUmaVez() {
+        when(repository.save(any(Tarefa.class))).thenReturn(tarefaEntity);
+
+        service.create(tarefaDTO);
+
+        verify(repository, times(1)).save(any(Tarefa.class));
+    }
+
+
+    @Test
+    void deveRetornarDTOQuandoTarefaExistir() {
+        when(repository.findById(1L)).thenReturn(Optional.of(tarefaEntity));
+
+        TarefaDTO resultado = service.findById(1L);
+
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.id()).isEqualTo(1L);
+        assertThat(resultado.nome()).isEqualTo("Tarefa Teste");
+    }
+
+    @Test
+    void deveLancarExcecaoQuandoTarefaNaoExistir() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(99L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("99");
+    }
+
+    @Test
+    void deveRetornarListaDeDTOs() {
+        Tarefa outra = new Tarefa(2L, "Outra Tarefa", LISTA_PADRAO, "Desc B", false);
+        when(repository.findAll()).thenReturn(List.of(tarefaEntity, outra));
+
+        List<TarefaDTO> resultado = service.findAll();
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado.get(0).id()).isEqualTo(1L);
+        assertThat(resultado.get(1).id()).isEqualTo(2L);
+    }
+
+    @Test
+    void deveRetornarListaVazia() {
+        when(repository.findAll()).thenReturn(List.of());
+
+        List<TarefaDTO> resultado = service.findAll();
+
+        assertThat(resultado).isEmpty();
+    }
+
+    @Test
+    void deveChamarDeleteById() {
+        doNothing().when(repository).deleteById(1L);
+
+        service.delete(1L);
+
+        verify(repository, times(1)).deleteById(1L);
+    }
+        
+
+    private TarefaDTO createTarefaDTO() {
+        return new TarefaDTO(1L, "tarefa1", null, "descricao", true);
+    }
+
+    private Tarefa mapEntity(TarefaDTO dto) {
+        return Tarefa.builder().id(dto.id()).nome(dto.nome()).ativo(dto.ativo()).lista(dto.lista()).descricao(dto.descricao()).build();
     }
 }
