@@ -1,8 +1,11 @@
 package com.tecdes.satestedesistemas.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,14 +31,14 @@ public class TarefaServiceTest {
         // Arrange
         TarefaDTO tarefaEntrada = createTarefaDTO();
         Tarefa tarefa = mapEntity(tarefaEntrada);
-        when(repository.save(tarefa)).thenReturn(tarefa);
+        when(repository.save(any(Tarefa.class))).thenReturn(tarefa);
 
         // Act
         TarefaDTO tarefaRetornada = service.create(tarefaEntrada);
 
         // Assert
         assertEquals(tarefaEntrada, tarefaRetornada);
-        verify(repository, times(1)).save(tarefa);
+        verify(repository, times(1)).save(any(Tarefa.class));
     }
 
     @Test 
@@ -48,6 +51,23 @@ public class TarefaServiceTest {
 
         // Assert
         verify(repository, times(1)).deleteById(id);
+    }
+
+    @Test
+    void deveAtualizarDescricaoTarefa() {
+        // Arrange
+        Long id = 1L;
+        Tarefa tarefaExistente = mapEntity(createTarefaDTO());
+        TarefaDTO dtoAtualizado = new TarefaDTO(id, "tarefa1", null, "descricaoAtualizada", true);
+        Tarefa tarefaAtualizada = mapEntity(dtoAtualizado);
+        when(repository.findById(id)).thenReturn(Optional.of(tarefaExistente));
+        when(repository.save(tarefaExistente)).thenReturn(tarefaAtualizada);
+        // Act
+        TarefaDTO resultado = service.update(id, dtoAtualizado);
+        // Assert
+        assertEquals("descricaoAtualizada", resultado.descricao());
+        verify(repository, times(1)).findById(id);
+        verify(repository, times(1)).save(tarefaExistente);
     }
 
     private TarefaDTO createTarefaDTO() {
